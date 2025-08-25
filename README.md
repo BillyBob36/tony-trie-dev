@@ -62,9 +62,26 @@ python -m http.server 8000
 npx serve .
 ```
 
-#### GitHub Pages :
+#### GitHub Pages avec Variables d'Environnement :
+1. **Configurez les secrets GitHub** :
+   - Allez dans votre dépôt GitHub > Settings > Secrets and variables > Actions
+   - Ajoutez les secrets suivants :
+     - `GOOGLE_CLIENT_ID` : Votre Client ID Google
+     - `GOOGLE_API_KEY` : Votre clé API Google
+     - `OPENAI_API_KEY` : Votre clé API OpenAI
+
+2. **Déployez automatiquement** :
+   - Poussez le code vers la branche `main`
+   - GitHub Actions se charge automatiquement du déploiement
+   - L'application sera disponible sur `https://votre-username.github.io/votre-repo`
+
+3. **Configurez Google Cloud Console** :
+   - Ajoutez votre URL GitHub Pages dans les origines autorisées
+   - Format : `https://votre-username.github.io`
+
+#### Déploiement Manuel (Alternative) :
 1. Poussez le code vers votre dépôt GitHub
-2. Activez GitHub Pages dans les paramètres
+2. Activez GitHub Pages dans Settings > Pages
 3. Configurez les domaines autorisés dans Google Cloud Console
 
 ## ⚙️ Configuration Google OAuth
@@ -217,9 +234,21 @@ Le prompt peut être personnalisé directement dans l'interface ou modifié par 
 
 ## 🔒 Sécurité
 
+### Variables d'Environnement
+- **Production** : Les clés API sont injectées via GitHub Secrets lors du déploiement
+- **Développement** : Les clés sont dans `config.js` (exclu du dépôt Git)
+- **Jamais de clés en dur** : Le code public ne contient aucune clé sensible
+
+### Authentification et Données
 - L'application utilise OAuth 2.0 pour une authentification sécurisée
 - Aucune donnée n'est stockée sur des serveurs externes
 - Toutes les opérations se font directement entre votre navigateur et les APIs Google/OpenAI
+- Accès restreint : Seuls les utilisateurs autorisés dans Google Cloud Console peuvent utiliser l'application
+
+### Bonnes Pratiques
+- ⚠️ **Important** : Ne jamais commiter de clés API dans le dépôt
+- 🔐 **GitHub Secrets** : Utilisez toujours les secrets GitHub pour les clés de production
+- 🌐 **Domaines autorisés** : Configurez précisément les origines autorisées dans Google Cloud Console
 
 ## 📝 Licence
 
