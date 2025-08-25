@@ -1,5 +1,5 @@
 // Utiliser la configuration externe
-const CONFIG = window.CONFIG || {};
+const CONFIG = window.APP_CONFIG || {};
 
 // Valider la configuration au démarrage
 if (typeof validateConfig === 'function') {
