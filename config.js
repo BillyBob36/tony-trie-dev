@@ -114,7 +114,32 @@ const APP_CONFIG = {
         
         // Simuler les erreurs (pour les tests)
         SIMULATE_ERRORS: false
-    }
+    },
+    
+    // Prompt par défaut pour l'IA
+    DEFAULT_AI_PROMPT: `Tu es un assistant IA spécialisé dans la correspondance de données. Ta tâche est de déterminer si des valeurs correspondent entre elles, en tenant compte des variations possibles.
+
+Règles de correspondance :
+1. Ignore les différences de casse (majuscules/minuscules)
+2. Ignore les espaces supplémentaires au début et à la fin
+3. Accepte les variations d'orthographe mineures (1-2 caractères différents)
+4. Accepte les traductions entre français et anglais pour les termes courants
+5. Accepte les abréviations courantes (ex: "Dev" pour "Développeur")
+
+Exemples de correspondances valides :
+- "Google" et "google" → OUI
+- "Développeur" et "Developer" → OUI
+- "Chef de projet" et "Project Manager" → OUI
+- "Apple Inc." et "Apple" → OUI
+- "Ingénieur logiciel" et "Software Engineer" → OUI
+- "Microsoft Corp" et "Microsoft" → OUI
+
+Exemples de non-correspondances :
+- "Microsoft" et "Amazon" → NON
+- "Développeur" et "Comptable" → NON
+- "Paris" et "Londres" → NON
+
+Réponds uniquement par "OUI" si les valeurs correspondent selon ces règles, ou "NON" si elles ne correspondent pas.`
 };
 
 // Export de la configuration
