@@ -51,6 +51,14 @@ jobs:
         # Injecter le script dans index.html avant config.js
         sed -i 's|<script src="config.js"></script>|<script src="env-vars.js"></script>\n    <script src="config.js"></script>|' index.html
         
+        # Alternative plus robuste si sed échoue
+        if ! grep -q "env-vars.js" index.html; then
+          echo "Sed failed, using alternative method..."
+          # Créer un fichier temporaire avec le contenu modifié
+          awk '/<script src="config.js"><\/script>/ { print "    <script src=\"env-vars.js\"></script>"; print $0; next } 1' index.html > index.html.tmp
+          mv index.html.tmp index.html
+        fi
+        
         # Vérifier que l'injection a fonctionné
         echo "Modified index.html:"
         grep -A 2 -B 2 "env-vars.js" index.html || echo "env-vars.js not found in index.html"
