@@ -57,11 +57,35 @@ const APP_CONFIG = {
         // Nombre maximum de lignes à afficher dans l'aperçu
         MAX_PREVIEW_ROWS: 100,
         
+        // Nombre maximum de spreadsheets à afficher
+        MAX_SPREADSHEETS_DISPLAY: 100,
+        
         // Délai d'affichage des notifications (en millisecondes)
         NOTIFICATION_DURATION: 5000,
         
         // Animation des éléments
         ANIMATION_DURATION: 300
+    },
+    
+    // Messages de l'application
+    MESSAGES: {
+        LOADING: {
+            SPREADSHEETS: 'Chargement des fichiers Google Sheets...',
+            SHEETS: 'Chargement des feuilles...',
+            COLUMNS: 'Chargement des colonnes...',
+            PROCESSING: 'Traitement en cours...'
+        },
+        ERROR: {
+            NO_SPREADSHEETS_FOUND: 'Aucun fichier Google Sheets trouvé',
+            SPREADSHEETS_LOAD_FAILED: 'Erreur lors du chargement des fichiers',
+            API_NOT_ENABLED: 'L\'API Google Drive n\'est pas activée pour ce projet',
+            AUTHENTICATION_FAILED: 'Erreur d\'authentification',
+            NETWORK_ERROR: 'Erreur de réseau'
+        },
+        SUCCESS: {
+            SPREADSHEETS_LOADED: 'Fichiers chargés avec succès',
+            PROCESSING_COMPLETE: 'Traitement terminé'
+        }
     },
     
     // Configuration de l'export
