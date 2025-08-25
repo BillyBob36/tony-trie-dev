@@ -853,3 +853,78 @@ header p {
         transform: translateY(0);
     }
 }
+
+/* Styles pour le message de configuration */
+.config-message {
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.config-message h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+    font-size: 2rem;
+}
+
+.config-instructions {
+    text-align: left;
+    background: #f8f9fa;
+    padding: 25px;
+    border-radius: 10px;
+    border-left: 5px solid #007bff;
+}
+
+.config-instructions h3 {
+    color: #495057;
+    margin: 20px 0 10px 0;
+    font-size: 1.3rem;
+}
+
+.config-instructions h4 {
+    color: #6c757d;
+    margin: 15px 0 8px 0;
+    font-size: 1.1rem;
+}
+
+.config-instructions ol,
+.config-instructions ul {
+    margin: 10px 0 10px 20px;
+}
+
+.config-instructions li {
+    margin: 8px 0;
+    line-height: 1.6;
+}
+
+.config-instructions code {
+    background: #e9ecef;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    color: #d63384;
+}
+
+.config-instructions a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.config-instructions a:hover {
+    text-decoration: underline;
+}
+
+.config-note {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+}
+
+.config-note p {
+    margin: 0;
+    color: #856404;
+    font-style: italic;
+}

@@ -1,6 +1,65 @@
 // Utiliser la configuration externe
 const CONFIG = window.APP_CONFIG || {};
 
+// Fonction pour vérifier si la configuration est valide
+function isConfigurationValid() {
+    if (!CONFIG || Object.keys(CONFIG).length === 0) {
+        return false;
+    }
+    
+    // Vérifier si les clés contiennent des placeholders
+    if (!CONFIG.GOOGLE || 
+        !CONFIG.GOOGLE.CLIENT_ID || 
+        CONFIG.GOOGLE.CLIENT_ID.includes('VOTRE_') || 
+        CONFIG.GOOGLE.CLIENT_ID.includes('test-client-id')) {
+        return false;
+    }
+    
+    if (!CONFIG.OPENAI || 
+        !CONFIG.OPENAI.API_KEY || 
+        CONFIG.OPENAI.API_KEY.includes('VOTRE_')) {
+        return false;
+    }
+    
+    return true;
+}
+
+// Fonction pour afficher le message de configuration
+function showConfigurationMessage() {
+    const authSection = document.getElementById('auth-section');
+    if (authSection) {
+        authSection.innerHTML = `
+            <div class="config-message">
+                <h2>🔧 Configuration requise</h2>
+                <div class="config-instructions">
+                    <p><strong>Cette application nécessite une configuration avec vos clés API.</strong></p>
+                    
+                    <h3>📋 Instructions :</h3>
+                    <ol>
+                        <li>Téléchargez le fichier <code>config.example.js</code> depuis le <a href="https://github.com/BillyBob36/tony-trie" target="_blank">repository GitHub</a></li>
+                        <li>Renommez-le en <code>config.js</code></li>
+                        <li>Remplacez les placeholders par vos vraies clés API :</li>
+                    </ol>
+                    
+                    <h4>🔑 Clés requises :</h4>
+                    <ul>
+                        <li><strong>Google Client ID</strong> : Obtenez-le depuis <a href="https://console.cloud.google.com" target="_blank">Google Cloud Console</a></li>
+                        <li><strong>Google API Key</strong> : Activez les APIs Sheets et Drive</li>
+                        <li><strong>OpenAI API Key</strong> : Obtenez-la depuis <a href="https://platform.openai.com" target="_blank">OpenAI Platform</a></li>
+                    </ul>
+                    
+                    <h4>📁 Placement du fichier :</h4>
+                    <p>Placez le fichier <code>config.js</code> dans le même dossier que <code>index.html</code></p>
+                    
+                    <div class="config-note">
+                        <p><strong>Note :</strong> Pour des raisons de sécurité, les clés API ne sont pas incluses dans le code public. Vous devez configurer vos propres clés pour utiliser l'application.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
 // Valider la configuration au démarrage
 if (typeof validateConfig === 'function') {
     const configErrors = validateConfig();
@@ -40,10 +99,10 @@ let tokenClient;
 let accessToken = null;
 
 function initClient() {
-    // Vérifier si le Client ID est configuré
-    if (!CONFIG.GOOGLE.CLIENT_ID || CONFIG.GOOGLE.CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID') || CONFIG.GOOGLE.CLIENT_ID.includes('test-client-id')) {
-        console.warn('Google Client ID non configuré. Mode démo activé.');
-        showDemoMode();
+    // Vérifier si la configuration est valide
+    if (!isConfigurationValid()) {
+        console.warn('Configuration manquante ou invalide. Affichage du message d\'instruction.');
+        showConfigurationMessage();
         return;
     }
     
