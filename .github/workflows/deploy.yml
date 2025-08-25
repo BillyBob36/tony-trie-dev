@@ -19,16 +19,41 @@ jobs:
       with:
         node-version: '18'
         
+    - name: Check secrets availability
+      run: |
+        echo "Checking if secrets are available..."
+        if [ -z "${{ secrets.GOOGLE_CLIENT_ID }}" ]; then
+          echo "Warning: GOOGLE_CLIENT_ID secret is not set"
+        fi
+        if [ -z "${{ secrets.GOOGLE_API_KEY }}" ]; then
+          echo "Warning: GOOGLE_API_KEY secret is not set"
+        fi
+        if [ -z "${{ secrets.OPENAI_API_KEY }}" ]; then
+          echo "Warning: OPENAI_API_KEY secret is not set"
+        fi
+        
     - name: Inject environment variables into HTML
       run: |
         # Créer un script avec les variables d'environnement
-        cat > env-vars.js << EOF
+        cat > env-vars.js << 'EOF'
         window.GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";
         window.GOOGLE_API_KEY = "${{ secrets.GOOGLE_API_KEY }}";
         window.OPENAI_API_KEY = "${{ secrets.OPENAI_API_KEY }}";
         EOF
+        
+        # Vérifier que le fichier a été créé
+        echo "Contents of env-vars.js:"
+        cat env-vars.js
+        
+        # Créer une sauvegarde de index.html
+        cp index.html index.html.backup
+        
         # Injecter le script dans index.html avant config.js
         sed -i 's|<script src="config.js"></script>|<script src="env-vars.js"></script>\n    <script src="config.js"></script>|' index.html
+        
+        # Vérifier que l'injection a fonctionné
+        echo "Modified index.html:"
+        grep -A 2 -B 2 "env-vars.js" index.html || echo "env-vars.js not found in index.html"
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
