@@ -21,8 +21,14 @@ jobs:
         
     - name: Inject environment variables into HTML
       run: |
-        # Injecter les variables d'environnement dans index.html
-        sed -i 's|<script src="config.js"></script>|<script>\n        window.GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";\n        window.GOOGLE_API_KEY = "${{ secrets.GOOGLE_API_KEY }}";\n        window.OPENAI_API_KEY = "${{ secrets.OPENAI_API_KEY }}";\n        </script>\n        <script src="config.js"></script>|' index.html
+        # Créer un script avec les variables d'environnement
+        cat > env-vars.js << EOF
+        window.GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";
+        window.GOOGLE_API_KEY = "${{ secrets.GOOGLE_API_KEY }}";
+        window.OPENAI_API_KEY = "${{ secrets.OPENAI_API_KEY }}";
+        EOF
+        # Injecter le script dans index.html avant config.js
+        sed -i 's|<script src="config.js"></script>|<script src="env-vars.js"></script>\n    <script src="config.js"></script>|' index.html
         
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
