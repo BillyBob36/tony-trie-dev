@@ -1425,6 +1425,13 @@ async function checkCriteriaMatchWithThreshold(targetValue, criteriaValues, user
 
 async function checkWithAI(targetValue, criteriaValues) {
     const aiConfig = getAIConfig();
+    
+    // Vérifier que la clé API OpenAI est configurée
+    if (!CONFIG.OPENAI?.API_KEY) {
+        console.error('Clé API OpenAI non configurée');
+        throw new Error('Clé API OpenAI manquante. Veuillez configurer votre clé API dans les variables d\'environnement.');
+    }
+    
     let retries = 0;
     
     while (retries < aiConfig.retryAttempts) {
@@ -2093,6 +2100,9 @@ function loadAISettings() {
     
     if (savedPrompt && promptTextarea) {
         promptTextarea.value = savedPrompt;
+    } else if (promptTextarea && !promptTextarea.value.trim()) {
+        // Si aucun prompt sauvegardé et le textarea est vide, charger le prompt par défaut
+        promptTextarea.value = CONFIG.DEFAULT_AI_PROMPT;
     }
     
     // Charger d'autres paramètres depuis localStorage si nécessaire
@@ -2142,6 +2152,7 @@ function saveAISettings() {
 // Obtenir la configuration IA actuelle
 function getAIConfig() {
     return {
+        enabled: true, // IA toujours activée par défaut
         model: document.getElementById('ai-model')?.value || 'gpt-3.5-turbo',
         temperature: parseFloat(document.getElementById('temperature')?.value || '0.3'),
         maxTokens: parseInt(document.getElementById('max-tokens')?.value || '150'),
