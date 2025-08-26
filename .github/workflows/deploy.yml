@@ -41,11 +41,11 @@ jobs:
         
     - name: Inject environment variables into HTML
       run: |
-        # Créer un script avec les variables d'environnement
-        cat > env-vars.js << 'EOF'
-        window.GOOGLE_CLIENT_ID = "${{ secrets.GOOGLE_CLIENT_ID }}";
-        window.GOOGLE_API_KEY = "${{ secrets.GOOGLE_API_KEY }}";
-        window.OPENAI_API_KEY = "${{ secrets.OPENAI_API_KEY }}";
+        # Créer un script avec les variables d'environnement en échappant les valeurs
+        cat > env-vars.js << EOF
+        window.GOOGLE_CLIENT_ID = $(echo '${{ secrets.GOOGLE_CLIENT_ID }}' | jq -R .);
+        window.GOOGLE_API_KEY = $(echo '${{ secrets.GOOGLE_API_KEY }}' | jq -R .);
+        window.OPENAI_API_KEY = $(echo '${{ secrets.OPENAI_API_KEY }}' | jq -R .);
         EOF
         
         # Vérifier que le fichier a été créé
