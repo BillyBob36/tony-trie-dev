@@ -1190,12 +1190,14 @@ async function startProcessing() {
             matchedCount = allMatchedRows.length;
             updateStats();
             
-            // Exportation progressive : exporter quand on a assez de résultats
-            if (exportConfig.ENABLED && batchResult.matchedRows.length > 0) {
-                exportedBatches = exportedBatches.concat(batchResult.matchedRows);
+            // Exportation progressive : accumuler les résultats
+            if (exportConfig.ENABLED) {
+                if (batchResult.matchedRows.length > 0) {
+                    exportedBatches = exportedBatches.concat(batchResult.matchedRows);
+                }
                 
                 // Exporter quand on atteint la taille de lot d'export ou à la fin
-                if (exportedBatches.length >= exportBatchSize || i === totalBatches - 1) {
+                if (exportedBatches.length >= exportBatchSize || (i === totalBatches - 1 && exportedBatches.length > 0)) {
                     try {
                         updateProgress(`Export en cours... (${exportedBatches.length} résultats)`, 
                                      (currentBatch / totalBatches) * 90 + 5);
@@ -1233,10 +1235,27 @@ async function startProcessing() {
         }
         
         if (isProcessing) {
-            // Export final des résultats restants (si pas d'export progressif)
+            // Export final des résultats restants
             if (!exportConfig.ENABLED) {
+                // Export classique : tous les résultats en une fois
                 updateProgress(CONFIG.MESSAGES.LOADING.EXPORTING, 95);
                 await exportEnrichedResults(allMatchedRows, outputSpreadsheetId, outputSheetName, targetData[0]);
+            } else if (exportedBatches.length > 0) {
+                // Export progressif : exporter les derniers résultats restants
+                try {
+                    updateProgress(`Export final... (${exportedBatches.length} résultats restants)`, 95);
+                    await exportProgressiveBatch(
+                        exportedBatches, 
+                        outputSpreadsheetId, 
+                        outputSheetName, 
+                        targetData[0], 
+                        isFirstExport
+                    );
+                    console.log(`Export final: ${exportedBatches.length} résultats`);
+                } catch (exportError) {
+                    console.error('Erreur lors de l\'export final:', exportError);
+                    showMessage(`Erreur d'export final: ${exportError.message}`, 'warning', 3000);
+                }
             }
             
             updateProgress('Terminé !', 100);
@@ -2347,19 +2366,21 @@ async function exportProgressiveBatch(matchedRows, outputSpreadsheetId, outputSh
             exportData.push(row.data);
         });
         
-        // Déterminer la plage d'écriture
-        let range;
+        // Déterminer la plage d'écriture et l'URL
+        let url, method;
         if (isFirstBatch) {
-            // Premier lot : commencer à A1 avec les en-têtes
-            range = `${outputSheetName}!A1`;
+            // Premier lot : effacer la feuille et écrire à partir de A1
+            const clearUrl = `https://sheets.googleapis.com/v4/spreadsheets/${outputSpreadsheetId}/values/${encodeURIComponent(outputSheetName + '!A:ZZ')}:clear`;
+            await makeAuthenticatedRequest(clearUrl, { method: 'POST' });
+            
+            const range = `${outputSheetName}!A1`;
+            url = `https://sheets.googleapis.com/v4/spreadsheets/${outputSpreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
+            method = 'PUT';
         } else {
-            // Lots suivants : ajouter à la fin
-            range = `${outputSheetName}!A:A`; // Google Sheets trouvera automatiquement la prochaine ligne vide
+            // Lots suivants : ajouter à la fin en utilisant append
+            url = `https://sheets.googleapis.com/v4/spreadsheets/${outputSpreadsheetId}/values/${encodeURIComponent(outputSheetName)}:append?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+            method = 'POST';
         }
-        
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${outputSpreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
-        
-        const method = isFirstBatch ? 'PUT' : 'POST';
         const response = await makeAuthenticatedRequest(url, {
             method: method,
             body: JSON.stringify({
