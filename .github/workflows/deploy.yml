@@ -64,6 +64,12 @@ jobs:
         echo "Modified index.html:"
         grep -A 2 -B 2 "env-vars.js" index.html || echo "env-vars.js not found in index.html"
         
+        # Debug: Vérifier les fichiers présents
+        echo "Files in current directory:"
+        ls -la
+        echo "Content of env-vars.js:"
+        cat env-vars.js
+        
     - name: Setup Pages
       uses: actions/configure-pages@v4
       if: github.ref == 'refs/heads/main'
