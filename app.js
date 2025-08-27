@@ -28,7 +28,6 @@ document.addEventListener('DOMContentLoaded', function() {
     generateDefaultPrompt();
     setupAIConfigTabs();
     setupAIConfigEventListeners();
-    loadAISettings();
 });
 
 // Initialisation de l'API Google
@@ -1500,9 +1499,10 @@ async function checkWithAI(targetValue, criteriaValues) {
     const aiConfig = getAIConfig();
     
     // Vérifier que la clé API OpenAI est configurée
-    if (!CONFIG.OPENAI?.API_KEY) {
-        console.error('Clé API OpenAI non configurée');
-        throw new Error('Clé API OpenAI manquante. Veuillez configurer votre clé API dans les variables d\'environnement.');
+    if (!CONFIG.OPENAI?.API_KEY || CONFIG.OPENAI.API_KEY === 'VOTRE_OPENAI_API_KEY_ICI') {
+        console.warn('Clé API OpenAI non configurée - utilisation du fallback de correspondance basique');
+        // Retourner un fallback basé sur la correspondance basique
+        return checkBasicMatch(targetValue, criteriaValues);
     }
     
     let retries = 0;
@@ -2154,14 +2154,6 @@ function setupAIConfigEventListeners() {
         });
     }
     
-    // Gestionnaire pour le sélecteur de modèle IA
-    const modelSelect = document.getElementById('ai-model');
-    if (modelSelect) {
-        modelSelect.addEventListener('change', (e) => {
-            localStorage.setItem('aiModel', e.target.value);
-        });
-    }
-    
     // Charger les paramètres sauvegardés
     loadAISettings();
 }
@@ -2201,13 +2193,10 @@ function loadAISettings() {
         }
     }
     
-    const modelSelect = document.getElementById('ai-model');
-    if (modelSelect) {
-        if (savedModel) {
+    if (savedModel) {
+        const modelSelect = document.getElementById('ai-model');
+        if (modelSelect) {
             modelSelect.value = savedModel;
-        } else {
-            // Définir GPT-5 Nano par défaut si aucun modèle sauvegardé
-            modelSelect.value = 'gpt-5-nano';
         }
     }
 }

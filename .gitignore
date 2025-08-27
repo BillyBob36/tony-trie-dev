@@ -16,6 +16,7 @@ tmp/
 # Fichiers de configuration locale
 .env
 .env.local
+env-vars.js
 
 # Cache
 .cache/
