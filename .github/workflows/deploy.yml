@@ -56,9 +56,8 @@ jobs:
         cp index.html index.html.backup
         
         # Injecter le script dans index.html avant config.js
-        # Utiliser awk pour une approche plus robuste
-        awk '/<script src="config.js"><\/script>/ { print "    <script src=\"env-vars.js\"></script>"; print $0; next } 1' index.html > index.html.tmp
-        mv index.html.tmp index.html
+        # Utiliser sed avec un pattern plus simple
+        sed -i 's|<script src="config.js"></script>|<script src="env-vars.js"></script>\n    <script src="config.js"></script>|' index.html
         
         # Vérifier que l'injection a fonctionné
         echo "Modified index.html:"
