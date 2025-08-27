@@ -26,7 +26,7 @@ const APP_CONFIG = {
         API_KEY: window.OPENAI_API_KEY,
         
         // Modèle à utiliser
-        MODEL: 'gpt-3.5-turbo',
+        MODEL: 'gpt-5-nano',
         
         // Paramètres du modèle
         MAX_TOKENS: 10,
