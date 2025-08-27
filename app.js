@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     generateDefaultPrompt();
     setupAIConfigTabs();
     setupAIConfigEventListeners();
+    loadAISettings();
 });
 
 // Initialisation de l'API Google
@@ -2153,6 +2154,14 @@ function setupAIConfigEventListeners() {
         });
     }
     
+    // Gestionnaire pour le sélecteur de modèle IA
+    const modelSelect = document.getElementById('ai-model');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', (e) => {
+            localStorage.setItem('aiModel', e.target.value);
+        });
+    }
+    
     // Charger les paramètres sauvegardés
     loadAISettings();
 }
@@ -2192,10 +2201,13 @@ function loadAISettings() {
         }
     }
     
-    if (savedModel) {
-        const modelSelect = document.getElementById('ai-model');
-        if (modelSelect) {
+    const modelSelect = document.getElementById('ai-model');
+    if (modelSelect) {
+        if (savedModel) {
             modelSelect.value = savedModel;
+        } else {
+            // Définir GPT-5 Nano par défaut si aucun modèle sauvegardé
+            modelSelect.value = 'gpt-5-nano';
         }
     }
 }
