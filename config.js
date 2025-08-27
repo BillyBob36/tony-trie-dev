@@ -96,13 +96,25 @@ const APP_CONFIG = {
         // Format de date pour les noms de fichiers
         DATE_FORMAT: 'YYYY-MM-DD_HH-mm',
         
+        // Exportation progressive par lots
+        PROGRESSIVE_EXPORT: {
+            // Activer l'exportation progressive
+            ENABLED: true,
+            
+            // Nombre de résultats à exporter par lot
+            BATCH_SIZE: 100,
+            
+            // Délai entre les exports de lots (en millisecondes)
+            BATCH_DELAY: 500
+        },
+        
         // Couleurs pour les résultats
         COLORS: {
             MATCH: '#4CAF50',
             NO_MATCH: '#F44336',
             PARTIAL: '#FF9800'
         }
-    },
+    }
     
     // Configuration du debug
     DEBUG: {

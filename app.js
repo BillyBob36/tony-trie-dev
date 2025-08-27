@@ -1163,10 +1163,15 @@ async function startProcessing() {
         let allMatchedRows = [];
         let apiCallCount = 0;
         let startTime = Date.now();
+        let exportedBatches = [];
+        let isFirstExport = true;
         
-        showMessage(`Traitement optimisé: ${totalBatches} lots de ${batchSize} éléments`, 'info', 5000);
+        const exportConfig = CONFIG.EXPORT.PROGRESSIVE_EXPORT;
+        const exportBatchSize = exportConfig.ENABLED ? exportConfig.BATCH_SIZE : 1000;
         
-        // Traiter par lots avec optimisation
+        showMessage(`Traitement optimisé: ${totalBatches} lots de ${batchSize} éléments avec exportation progressive`, 'info', 5000);
+        
+        // Traiter par lots avec exportation progressive
         for (let i = 0; i < totalBatches && isProcessing; i++) {
             currentBatch = i + 1;
             const start = i * batchSize;
@@ -1174,7 +1179,7 @@ async function startProcessing() {
             const batch = targetData.slice(start, end);
             
             updateProgress(`Traitement du lot ${currentBatch}/${totalBatches}...`, 
-                         (currentBatch - 1) / totalBatches * 100);
+                         (currentBatch - 1) / totalBatches * 90); // Réserver 10% pour l'export final
             
             // Traitement avec gestion des erreurs et retry
             const batchResult = await processBatchWithRetry(batch, apiCallCount);
@@ -1185,7 +1190,42 @@ async function startProcessing() {
             matchedCount = allMatchedRows.length;
             updateStats();
             
-            // Délai adaptatif entre les lots
+            // Exportation progressive : exporter quand on a assez de résultats
+            if (exportConfig.ENABLED && batchResult.matchedRows.length > 0) {
+                exportedBatches = exportedBatches.concat(batchResult.matchedRows);
+                
+                // Exporter quand on atteint la taille de lot d'export ou à la fin
+                if (exportedBatches.length >= exportBatchSize || i === totalBatches - 1) {
+                    try {
+                        updateProgress(`Export en cours... (${exportedBatches.length} résultats)`, 
+                                     (currentBatch / totalBatches) * 90 + 5);
+                        
+                        await exportProgressiveBatch(
+                            exportedBatches, 
+                            outputSpreadsheetId, 
+                            outputSheetName, 
+                            targetData[0], 
+                            isFirstExport
+                        );
+                        
+                        console.log(`Exporté ${exportedBatches.length} résultats (lot ${Math.ceil(matchedCount / exportBatchSize)})`);
+                        exportedBatches = []; // Vider le buffer d'export
+                        isFirstExport = false;
+                        
+                        // Délai entre les exports pour éviter la surcharge
+                        if (exportConfig.BATCH_DELAY > 0) {
+                            await sleep(exportConfig.BATCH_DELAY);
+                        }
+                        
+                    } catch (exportError) {
+                        console.error('Erreur lors de l\'export progressif:', exportError);
+                        showMessage(`Erreur d'export: ${exportError.message}`, 'warning', 3000);
+                        // Continuer le traitement même en cas d'erreur d'export
+                    }
+                }
+            }
+            
+            // Délai adaptatif entre les lots de traitement
             if (i + 1 < totalBatches && isProcessing) {
                 const adaptiveDelay = calculateAdaptiveDelay(apiCallCount, startTime, aiConfig.batchDelay);
                 await sleep(adaptiveDelay);
@@ -1193,16 +1233,19 @@ async function startProcessing() {
         }
         
         if (isProcessing) {
-            // Exporter les résultats avec les nouvelles métadonnées
-            updateProgress(CONFIG.MESSAGES.LOADING.EXPORTING, 95);
-            await exportEnrichedResults(allMatchedRows, outputSpreadsheetId, outputSheetName, targetData[0]);
+            // Export final des résultats restants (si pas d'export progressif)
+            if (!exportConfig.ENABLED) {
+                updateProgress(CONFIG.MESSAGES.LOADING.EXPORTING, 95);
+                await exportEnrichedResults(allMatchedRows, outputSpreadsheetId, outputSheetName, targetData[0]);
+            }
             
             updateProgress('Terminé !', 100);
             showResults(allMatchedRows.length, processedCount);
             
             // Afficher les statistiques de performance
             const totalTime = Math.round((Date.now() - startTime) / 1000);
-            showMessage(`Traitement terminé en ${totalTime}s avec ${apiCallCount} appels API`, 'success', 10000);
+            const exportMode = exportConfig.ENABLED ? 'progressive' : 'finale';
+            showMessage(`Traitement terminé en ${totalTime}s avec ${apiCallCount} appels API (export ${exportMode})`, 'success', 10000);
             showSuccess(CONFIG.MESSAGES.SUCCESS.PROCESSING_COMPLETE);
         }
         
@@ -1981,19 +2024,11 @@ function generateDemoResults() {
 
 // Écriture vers Google Sheets
 async function writeToGoogleSheet(spreadsheetId, sheetName, data) {
-    if (!isSignedIn || !accessToken) {
-        throw new Error('Utilisateur non connecté');
-    }
-    
     const range = `${sheetName}!A1:${String.fromCharCode(64 + data[0].length)}${data.length}`;
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`;
     
-    const response = await fetch(url, {
+    const response = await makeAuthenticatedRequest(url, {
         method: 'PUT',
-        headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json'
-        },
         body: JSON.stringify({
             values: data
         })
@@ -2228,6 +2263,124 @@ async function processBatchWithRetry(batch, apiCallCount) {
     throw new Error('Échec du traitement après plusieurs tentatives');
 }
 
+// Fonction pour renouveler le token d'accès
+function renewAccessToken() {
+    return new Promise((resolve, reject) => {
+        if (tokenClient) {
+            tokenClient.requestAccessToken({
+                callback: (tokenResponse) => {
+                    if (tokenResponse.access_token) {
+                        accessToken = tokenResponse.access_token;
+                        console.log('Token d\'accès renouvelé avec succès');
+                        resolve(tokenResponse.access_token);
+                    } else {
+                        reject(new Error('Échec du renouvellement du token'));
+                    }
+                },
+                error_callback: (error) => {
+                    reject(new Error(`Erreur de renouvellement: ${error.error}`));
+                }
+            });
+        } else {
+            reject(new Error('Client de token non initialisé'));
+        }
+    });
+}
+
+// Fonction utilitaire pour effectuer des appels API avec gestion automatique du renouvellement de token
+async function makeAuthenticatedRequest(url, options = {}) {
+    if (!isSignedIn || !accessToken) {
+        throw new Error('Utilisateur non connecté');
+    }
+    
+    // Ajouter l'en-tête d'autorisation
+    const requestOptions = {
+        ...options,
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    };
+    
+    // Première tentative
+    let response = await fetch(url, requestOptions);
+    
+    // Si erreur 401 (token expiré), tenter de renouveler le token
+    if (response.status === 401) {
+        console.log('Token expiré, tentative de renouvellement automatique...');
+        try {
+            await renewAccessToken();
+            
+            // Mettre à jour le token dans les en-têtes et réessayer
+            requestOptions.headers['Authorization'] = `Bearer ${accessToken}`;
+            response = await fetch(url, requestOptions);
+        } catch (renewError) {
+            console.error('Échec du renouvellement automatique du token:', renewError);
+            throw new Error('Session expirée. Veuillez vous reconnecter.');
+        }
+    }
+    
+    return response;
+}
+
+// Exportation progressive par lots pour éviter la surcharge mémoire
+async function exportProgressiveBatch(matchedRows, outputSpreadsheetId, outputSheetName, headerRow, isFirstBatch = false) {
+    try {
+        const exportConfig = CONFIG.EXPORT.PROGRESSIVE_EXPORT;
+        
+        if (!exportConfig.ENABLED) {
+            // Fallback vers l'exportation classique
+            return await exportEnrichedResults(matchedRows, outputSpreadsheetId, outputSheetName, headerRow);
+        }
+        
+        // Préparer les données pour ce lot
+        const exportData = [];
+        
+        // Ajouter les en-têtes seulement pour le premier lot
+        if (isFirstBatch) {
+            exportData.push(headerRow);
+        }
+        
+        // Ajouter les données de ce lot
+        matchedRows.forEach(row => {
+            exportData.push(row.data);
+        });
+        
+        // Déterminer la plage d'écriture
+        let range;
+        if (isFirstBatch) {
+            // Premier lot : commencer à A1 avec les en-têtes
+            range = `${outputSheetName}!A1`;
+        } else {
+            // Lots suivants : ajouter à la fin
+            range = `${outputSheetName}!A:A`; // Google Sheets trouvera automatiquement la prochaine ligne vide
+        }
+        
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${outputSpreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW&insertDataOption=INSERT_ROWS`;
+        
+        const method = isFirstBatch ? 'PUT' : 'POST';
+        const response = await makeAuthenticatedRequest(url, {
+            method: method,
+            body: JSON.stringify({
+                values: exportData
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        console.log(`Lot exporté: ${matchedRows.length} lignes vers ${outputSheetName}`);
+        return response;
+        
+    } catch (error) {
+        console.error('Erreur lors de l\'exportation du lot:', error);
+        throw new Error(`Échec de l'exportation du lot: ${error.message}`);
+    }
+}
+
+// Fonction d'exportation classique (conservée pour compatibilité)
 async function exportEnrichedResults(matchedRows, outputSpreadsheetId, outputSheetName, headerRow) {
     try {
         // Préparer les données avec seulement les données originales
@@ -2241,19 +2394,11 @@ async function exportEnrichedResults(matchedRows, outputSpreadsheetId, outputShe
             exportData.push(row.data);
         });
         
-        // Exporter vers Google Sheets
-        if (!isSignedIn || !accessToken) {
-            throw new Error('Utilisateur non connecté');
-        }
-        
+        // Exporter vers Google Sheets avec gestion automatique du token
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${outputSpreadsheetId}/values/${encodeURIComponent(outputSheetName + '!A1')}?valueInputOption=RAW`;
         
-        const response = await fetch(url, {
+        const response = await makeAuthenticatedRequest(url, {
             method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
             body: JSON.stringify({
                 values: exportData
             })
