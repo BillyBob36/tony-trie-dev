@@ -1169,7 +1169,13 @@ async function startProcessing() {
         const exportConfig = CONFIG.EXPORT.PROGRESSIVE_EXPORT;
         const exportBatchSize = exportConfig.ENABLED ? exportConfig.BATCH_SIZE : 1000;
         
-        showMessage(`Traitement optimisé: ${totalBatches} lots de ${batchSize} éléments avec exportation progressive`, 'info', 5000);
+        console.log('Configuration exportation progressive:', {
+            enabled: exportConfig.ENABLED,
+            batchSize: exportBatchSize,
+            delay: exportConfig.BATCH_DELAY
+        });
+        
+        showMessage(`Traitement optimisé: ${totalBatches} lots de ${batchSize} éléments avec exportation progressive (export tous les ${exportBatchSize} matchs)`, 'info', 5000);
         
         // Traiter par lots avec exportation progressive
         for (let i = 0; i < totalBatches && isProcessing; i++) {
@@ -1194,10 +1200,14 @@ async function startProcessing() {
             if (exportConfig.ENABLED) {
                 if (batchResult.matchedRows.length > 0) {
                     exportedBatches = exportedBatches.concat(batchResult.matchedRows);
+                    console.log(`Ajout de ${batchResult.matchedRows.length} résultats. Total accumulé: ${exportedBatches.length}/${exportBatchSize}`);
                 }
                 
                 // Exporter quand on atteint la taille de lot d'export ou à la fin
-                if (exportedBatches.length >= exportBatchSize || (i === totalBatches - 1 && exportedBatches.length > 0)) {
+                const shouldExport = exportedBatches.length >= exportBatchSize || (i === totalBatches - 1 && exportedBatches.length > 0);
+                console.log(`Vérification export: ${exportedBatches.length} >= ${exportBatchSize} = ${exportedBatches.length >= exportBatchSize}, fin traitement: ${i === totalBatches - 1}, shouldExport: ${shouldExport}`);
+                
+                if (shouldExport) {
                     try {
                         updateProgress(`Export en cours... (${exportedBatches.length} résultats)`, 
                                      (currentBatch / totalBatches) * 90 + 5);
