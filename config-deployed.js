@@ -102,7 +102,7 @@ const APP_CONFIG = {
             ENABLED: true,
             
             // Nombre de résultats à exporter par lot
-            BATCH_SIZE: 100,
+            BATCH_SIZE: 10,
             
             // Délai entre les exports de lots (en millisecondes)
             BATCH_DELAY: 500
