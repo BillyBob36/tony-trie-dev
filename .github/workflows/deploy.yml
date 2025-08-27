@@ -56,8 +56,8 @@ jobs:
         cp index.html index.html.backup
         
         # Injecter le script dans index.html avant config.js
-        # Utiliser sed avec un pattern plus simple
-        sed -i 's|<script src="config.js"></script>|<script src="env-vars.js"></script>\n    <script src="config.js"></script>|' index.html
+        # Utiliser sed avec printf pour créer un vrai saut de ligne
+        sed -i "s|<script src=\"config.js\"></script>|<script src=\"env-vars.js\"></script>$(printf '\n    ')<script src=\"config.js\"></script>|" index.html
         
         # Vérifier que l'injection a fonctionné
         echo "Modified index.html:"
