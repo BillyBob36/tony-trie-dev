@@ -114,7 +114,7 @@ const APP_CONFIG = {
             NO_MATCH: '#F44336',
             PARTIAL: '#FF9800'
         }
-    }
+    },
     
     // Configuration du debug
     DEBUG: {
