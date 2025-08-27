@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="config.js"></script>
+    <script src="config-deployed.js"></script>
 </head>
 <body>
     <div class="container">
@@ -115,6 +115,7 @@
                             <div class="form-group">
                                 <label for="ai-model">Modèle IA:</label>
                                 <select id="ai-model">
+                                    <option value="gpt-5-nano" selected>GPT-5 Nano (Le plus rapide et économique)</option>
                                     <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Rapide)</option>
                                     <option value="gpt-4">GPT-4 (Plus précis)</option>
                                     <option value="gpt-4-turbo">GPT-4 Turbo (Équilibré)</option>
